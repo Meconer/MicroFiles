@@ -21,6 +21,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -29,6 +32,7 @@ import javafx.collections.transformation.SortedList;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TableColumn;
@@ -67,6 +71,9 @@ public class FXMLController implements Initializable {
 
     @FXML
     private TableColumn<FileSet, String> pathColumn;
+    
+    @FXML
+    private Button updateTableButton;
 
     List<FileSet> fileData;
 
@@ -196,6 +203,12 @@ public class FXMLController implements Initializable {
             } catch (IOException ex) {
                 Utils.showError("Fel vid skrivning av " + PATH_TO_FILELIST + ". " + ex.getMessage());
             }
+            Platform.runLater(new Runnable() {
+                @Override
+                public void run() {
+                    updateTableButton.setVisible(true);
+                }
+            });
             return iterations;
         }
 
@@ -203,9 +216,8 @@ public class FXMLController implements Initializable {
 
     private void buildNewFileList() {
 
-        new Thread(fileListUpdateTask).start();
-        System.out.println("Task ready");
-
+        var updateTask = new Thread(fileListUpdateTask);
+        updateTask.start();
     }
 
     /**
@@ -221,19 +233,12 @@ public class FXMLController implements Initializable {
             buildNewFileListAndWait();
 
         }
+        
+        updateTableButton.setVisible(false);
 
-        fileNameColumn.setCellValueFactory(new PropertyValueFactory<>("FileName"));
-        pathColumn.setCellValueFactory(new PropertyValueFactory<>("PathName"));
+        initTable();
 
-        ObservableList fileTableData = FXCollections.observableArrayList(fileData);
-        filteredData = new FilteredList<>(fileTableData, fileSet -> true);
-        SortedList<FileSet> sortedData = new SortedList<>(filteredData);
-        sortedData.comparatorProperty().bind(fileTable.comparatorProperty());
-        fileTable.setItems(sortedData);
 
-        searchText.textProperty().addListener((observable, oldValue, newValue) -> {
-            filterTable(newValue.toLowerCase());
-        });
 
         fileNameCheckBox.selectedProperty().addListener((ObservableValue<? extends Boolean> ov, Boolean t, Boolean t1) -> {
             filterTable(searchText.getText().toLowerCase());
@@ -255,6 +260,22 @@ public class FXMLController implements Initializable {
             for (String searchWord : searchWords) {
                 System.out.println(searchWord + "#");
             }
+        });
+    }
+
+    @FXML
+    private void initTable() {
+        fileNameColumn.setCellValueFactory(new PropertyValueFactory<>("FileName"));
+        pathColumn.setCellValueFactory(new PropertyValueFactory<>("PathName"));
+        
+        ObservableList fileTableData = FXCollections.observableArrayList(fileData);
+        filteredData = new FilteredList<>(fileTableData, fileSet -> true);
+        SortedList<FileSet> sortedData = new SortedList<>(filteredData);
+        sortedData.comparatorProperty().bind(fileTable.comparatorProperty());
+        fileTable.setItems(sortedData);
+        updateTableButton.setVisible(false);
+        searchText.textProperty().addListener((observable, oldValue, newValue) -> {
+            filterTable(newValue.toLowerCase());
         });
     }
 
