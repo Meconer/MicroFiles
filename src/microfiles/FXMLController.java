@@ -52,7 +52,7 @@ public class FXMLController implements Initializable {
 
     @FXML
     private CheckBox pathNameCheckBox;
-    
+
     @FXML
     private CheckBox requireAllSearchTerms;
 
@@ -102,7 +102,7 @@ public class FXMLController implements Initializable {
 //        ".vnc",
 //        ".pm"
 //    };
-    
+
     @FXML
     public void upDateFileList() {
         if (Utils.askForOk("Är du säker? Det tar flera minuter", "Uppdatera fillista?")) {
@@ -112,26 +112,33 @@ public class FXMLController implements Initializable {
 
     @FXML
     public void openInExplorer() {
-        String selectedPath = fileTable.getSelectionModel().getSelectedItem().getPathName();
-        try {
-            Desktop.getDesktop().open(new File(selectedPath));
-        } catch (IOException ex) {
-            Utils.showError("Något gick fel : " + ex.getMessage());
+        var item = fileTable.getSelectionModel().getSelectedItem();
+        if (item != null) {
+            var selectedPath = fileTable.getSelectionModel().getSelectedItem().getPathName();
+
+            try {
+                if (selectedPath != null) {
+                    Desktop.getDesktop().open(new File(selectedPath));
+                }
+            } catch (Exception ex) {
+                Utils.showError("Något gick fel : " + ex.getMessage());
+            }
         }
     }
 
     @FXML
     void openSelectedFile() {
         FileSet fileSet = fileTable.getSelectionModel().getSelectedItem();
-        String selectedFile = fileSet.getPathName() + "\\" + fileSet.getFileName();
-        try {
-            Desktop.getDesktop().open(new File(selectedFile));
-        } catch (IOException ex) {
-            Utils.showError("Något gick fel : " + ex.getMessage());
+        if (fileSet != null) {
+            String selectedFile = fileSet.getPathName() + "\\" + fileSet.getFileName();
+            try {
+                Desktop.getDesktop().open(new File(selectedFile));
+            } catch (IOException ex) {
+                Utils.showError("Något gick fel : " + ex.getMessage());
+            }
         }
-
     }
-    
+
     private void getPathsToSearch() {
         if (Files.exists(Paths.get(PATH_TO_SEARCH_PLACES_LIST))) {
             readSearchPlacesFromFile();
@@ -140,7 +147,6 @@ public class FXMLController implements Initializable {
             placesToSearch.addAll(Arrays.asList(PATHS_TO_SEARCH));
         }
     }
-
 
     Task fileListUpdateTask = new Task<Integer>() {
         @Override
@@ -151,7 +157,7 @@ public class FXMLController implements Initializable {
             updateMessage(message);
             System.out.println(message);
             for (String pathString : placesToSearch) {
-                message = "Söker i "+ pathString;
+                message = "Söker i " + pathString;
                 updateMessage(message);
                 System.out.println(message);
                 FileList fileList = new FileList(pathString, EXTENSIONS_TO_SAVE);
@@ -213,12 +219,11 @@ public class FXMLController implements Initializable {
         } else {
             Utils.askForOk("Det finns ingen fillista. Söker igenom för att skapa en ny", "Varning");
             buildNewFileListAndWait();
-            
+
         }
 
         fileNameColumn.setCellValueFactory(new PropertyValueFactory<>("FileName"));
         pathColumn.setCellValueFactory(new PropertyValueFactory<>("PathName"));
-
 
         ObservableList fileTableData = FXCollections.observableArrayList(fileData);
         filteredData = new FilteredList<>(fileTableData, fileSet -> true);
@@ -243,11 +248,11 @@ public class FXMLController implements Initializable {
         });
 
         progressLabel.textProperty().bind(fileListUpdateTask.messageProperty());
-        
-        searchText.setOnAction( e -> {
+
+        searchText.setOnAction(e -> {
             String[] searchWords = searchText.getText().split("\\s");
             System.out.println("-------");
-            for (String searchWord : searchWords ) {
+            for (String searchWord : searchWords) {
                 System.out.println(searchWord + "#");
             }
         });
@@ -260,7 +265,7 @@ public class FXMLController implements Initializable {
             fileData = new ArrayList<>();
             BufferedReader br = new BufferedReader(new FileReader(PATH_TO_FILELIST, StandardCharsets.UTF_8));
             String line;
-            while ((line = br.readLine() ) != null) {
+            while ((line = br.readLine()) != null) {
                 int separatorPosition = line.indexOf(FILE_AND_PATH_SEPARATOR);
                 String fileName = line.substring(0, separatorPosition);
                 String pathName = line.substring(separatorPosition + 2);
@@ -287,49 +292,34 @@ public class FXMLController implements Initializable {
             if (filterValue == null || filterValue.isEmpty()) {
                 return true;
             } else {
-                String[] searchWords = filterValue.split("\\s");
-                if (fileNameCheckBox.isSelected()) {
+                String[] searchWords = filterValue.toLowerCase().split("\\s");
+                String textToSearchIn = "";
+                if (fileNameCheckBox.isSelected()) textToSearchIn = fileSet.getFileName().toLowerCase();
+                if (pathNameCheckBox.isSelected()) textToSearchIn += fileSet.getPathName().toLowerCase();
+                if (!textToSearchIn.isBlank()) {
                     if (requireAllSearchTerms.isSelected()) {
                         Boolean found = true;
-                        for ( String searchWord : searchWords) {
-                            if ( ! fileSet.getFileName().toLowerCase().contains(searchWord.toLowerCase())) {
+                        for (String searchWord : searchWords) {
+                            if (!textToSearchIn.contains(searchWord)) {
                                 found = false;
                                 break;
                             }
                         }
-                        if (found) return true;
+                        if (found) {
+                            return true;
+                        }
                     } else {
                         Boolean found = false;
-                        for ( String searchWord : searchWords) {
-                            if ( fileSet.getFileName().toLowerCase().contains(searchWord.toLowerCase())) {
+                        for (String searchWord : searchWords) {
+                            if (textToSearchIn.contains(searchWord)) {
                                 found = true;
                                 break;
                             }
                         }
-                        if (found) return true;
-                        
-                    }
-                }
-                if (pathNameCheckBox.isSelected()) {
-                    if (requireAllSearchTerms.isSelected()) {
-                        Boolean found = true;
-                        for ( String searchWord : searchWords) {
-                            if ( ! fileSet.getPathName().toLowerCase().contains(searchWord.toLowerCase())) {
-                                found = false;
-                                break;
-                            }
+                        if (found) {
+                            return true;
                         }
-                        if (found) return true;
-                    } else {
-                        Boolean found = false;
-                        for ( String searchWord : searchWords) {
-                            if ( fileSet.getPathName().toLowerCase().contains(searchWord.toLowerCase())) {
-                                found = true;
-                                break;
-                            }
-                        }
-                        if (found) return true;
-                        
+
                     }
                 }
                 return false;
@@ -345,9 +335,9 @@ public class FXMLController implements Initializable {
             } catch (InterruptedException ex) {
                 System.out.println(ex.getMessage());
             }
-            
+
         }
-            
+
     }
 
     private void readSearchPlacesFromFile() {
@@ -356,8 +346,10 @@ public class FXMLController implements Initializable {
             BufferedReader br = new BufferedReader(new FileReader(PATH_TO_SEARCH_PLACES_LIST, StandardCharsets.UTF_8));
             String line;
             placesToSearch = new ArrayList<>();
-            while ((line = br.readLine() ) != null) {
-                if ( !line.startsWith("//")) placesToSearch.add(line); // Use only lines without comments
+            while ((line = br.readLine()) != null) {
+                if (!line.startsWith("//")) {
+                    placesToSearch.add(line); // Use only lines without comments
+                }
                 System.out.println("Place: " + line);
             }
             br.close();

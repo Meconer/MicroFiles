@@ -28,7 +28,7 @@
                <children>
                   <CheckBox fx:id="fileNameCheckBox" mnemonicParsing="false" prefHeight="17.0" prefWidth="200" selected="true" text="Filnamn" />
                   <CheckBox fx:id="pathNameCheckBox" mnemonicParsing="false" prefHeight="17.0" prefWidth="200.0" selected="true" text="Sökväg" />
-                  <CheckBox fx:id="requireAllSearchTerms" mnemonicParsing="false" prefHeight="17.0" prefWidth="200.0" selected="false" text="Kräv alla sökord" />
+                  <CheckBox fx:id="requireAllSearchTerms" mnemonicParsing="false" prefHeight="17.0" prefWidth="200.0" selected="true" text="Kräv alla sökord" />
                </children>
             </HBox>
             <TableView fx:id="fileTable" prefHeight="1200.0" prefWidth="1200.0">
