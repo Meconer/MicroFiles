@@ -14,6 +14,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -71,7 +72,7 @@ public class FXMLController implements Initializable {
 
     @FXML
     private TableColumn<FileSet, String> pathColumn;
-    
+
     @FXML
     private Button updateTableButton;
 
@@ -118,6 +119,15 @@ public class FXMLController implements Initializable {
     }
 
     @FXML
+    void changeSearchPathList() {
+        try {
+            Runtime.getRuntime().exec("notepad " + PATH_TO_SEARCH_PLACES_LIST);
+        } catch (IOException ex) {
+            Utils.showError("Något gick fel : " + ex.getMessage());
+        }
+    }
+
+    @FXML
     public void openInExplorer() {
         var item = fileTable.getSelectionModel().getSelectedItem();
         if (item != null) {
@@ -152,6 +162,7 @@ public class FXMLController implements Initializable {
         } else {
             placesToSearch = new ArrayList<>();
             placesToSearch.addAll(Arrays.asList(PATHS_TO_SEARCH));
+            saveSearchPlacesToFile();
         }
     }
 
@@ -228,17 +239,14 @@ public class FXMLController implements Initializable {
         System.out.println(PATH_TO_FILELIST);
         if (Files.exists(Paths.get(PATH_TO_FILELIST))) {
             readFileListFromFile();
+            initTable();
         } else {
-            Utils.askForOk("Det finns ingen fillista. Söker igenom för att skapa en ny", "Varning");
-            buildNewFileListAndWait();
+            //Utils.askForOk("Det finns ingen fillista. Söker igenom för att skapa en ny", "Varning");
+            //buildNewFileListAndWait();
 
         }
-        
+
         updateTableButton.setVisible(false);
-
-        initTable();
-
-
 
         fileNameCheckBox.selectedProperty().addListener((ObservableValue<? extends Boolean> ov, Boolean t, Boolean t1) -> {
             filterTable(searchText.getText().toLowerCase());
@@ -267,7 +275,7 @@ public class FXMLController implements Initializable {
     private void initTable() {
         fileNameColumn.setCellValueFactory(new PropertyValueFactory<>("FileName"));
         pathColumn.setCellValueFactory(new PropertyValueFactory<>("PathName"));
-        
+
         ObservableList fileTableData = FXCollections.observableArrayList(fileData);
         filteredData = new FilteredList<>(fileTableData, fileSet -> true);
         SortedList<FileSet> sortedData = new SortedList<>(filteredData);
@@ -315,8 +323,12 @@ public class FXMLController implements Initializable {
             } else {
                 String[] searchWords = filterValue.toLowerCase().split("\\s");
                 String textToSearchIn = "";
-                if (fileNameCheckBox.isSelected()) textToSearchIn = fileSet.getFileName().toLowerCase();
-                if (pathNameCheckBox.isSelected()) textToSearchIn += fileSet.getPathName().toLowerCase();
+                if (fileNameCheckBox.isSelected()) {
+                    textToSearchIn = fileSet.getFileName().toLowerCase();
+                }
+                if (pathNameCheckBox.isSelected()) {
+                    textToSearchIn += fileSet.getPathName().toLowerCase();
+                }
                 if (!textToSearchIn.isBlank()) {
                     if (requireAllSearchTerms.isSelected()) {
                         Boolean found = true;
@@ -383,6 +395,20 @@ public class FXMLController implements Initializable {
             Utils.showError("Fel vid inläsning av " + PATH_TO_FILELIST + ". " + ex.getMessage());
             System.exit(0);
         }
+    }
+
+    private void saveSearchPlacesToFile() {
+        System.out.println("Creating search places to file " + PATH_TO_SEARCH_PLACES_LIST);
+        try (FileWriter fw = new FileWriter(PATH_TO_SEARCH_PLACES_LIST)) {
+            for (String line : placesToSearch) {
+                fw.write(line + System.lineSeparator());
+            }
+            fw.close();
+        } catch (IOException ex) {
+            Utils.showError("Fel vid skrivande av " + PATH_TO_SEARCH_PLACES_LIST + ". " + ex.getMessage());
+            System.exit(0);
+        }
+
     }
 
 }

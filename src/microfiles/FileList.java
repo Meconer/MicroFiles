@@ -48,8 +48,8 @@ class FileList {
                 
                 
             });
-        } catch (IOException ex) {
-            ex.printStackTrace();
+        } catch (Exception ex) {
+            System.out.println("Fel vid läsning av " + startPathString);
         }
     }
 
