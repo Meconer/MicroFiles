@@ -14,7 +14,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -22,8 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.ResourceBundle;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javafx.application.Platform;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -137,7 +134,7 @@ public class FXMLController implements Initializable {
                 if (selectedPath != null) {
                     Desktop.getDesktop().open(new File(selectedPath));
                 }
-            } catch (Exception ex) {
+            } catch (IOException ex) {
                 Utils.showError("Något gick fel : " + ex.getMessage());
             }
         }
@@ -214,11 +211,8 @@ public class FXMLController implements Initializable {
             } catch (IOException ex) {
                 Utils.showError("Fel vid skrivning av " + PATH_TO_FILELIST + ". " + ex.getMessage());
             }
-            Platform.runLater(new Runnable() {
-                @Override
-                public void run() {
-                    updateTableButton.setVisible(true);
-                }
+            Platform.runLater(() -> {
+                updateTableButton.setVisible(true);
             });
             return iterations;
         }
@@ -233,6 +227,8 @@ public class FXMLController implements Initializable {
 
     /**
      * Initializes the controller class.
+     * @param url
+     * @param rb
      */
     @Override
     public void initialize(URL url, ResourceBundle rb) {
@@ -241,8 +237,9 @@ public class FXMLController implements Initializable {
             readFileListFromFile();
             initTable();
         } else {
-            //Utils.askForOk("Det finns ingen fillista. Söker igenom för att skapa en ny", "Varning");
-            //buildNewFileListAndWait();
+            //if (Utils.askForOk("Det finns ingen fillista. Söker igenom för att skapa en ny", "Varning")) {
+                //buildNewFileListAndWait();
+            //};
 
         }
 
